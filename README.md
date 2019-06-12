@@ -13,6 +13,7 @@ This library is used to generate all kinds of virtual person identities. Be awar
 ## Examples
 ```java
 Person person = IdentityHandler.generatePerson(Sex.EXAMPLE, new Range(minAge, maxAge), Country.EXAMPLE);
+person.getBio();
 person.getCreds().getUsername();
 person.getFirstName();
 person.getBirthDay();
