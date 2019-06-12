@@ -9,6 +9,7 @@ import com.nattguld.http.requests.impl.GetRequest;
 import com.nattguld.http.response.RequestResponse;
 import com.nattguld.identity.Identity;
 import com.nattguld.identity.Sex;
+import com.nattguld.identity.person.profile.BioHandler;
 import com.nattguld.util.chrono.DateTime;
 import com.nattguld.util.generics.kvps.impl.StringKeyValuePair;
 import com.nattguld.util.locale.Country;
@@ -26,7 +27,11 @@ import com.nattguld.util.text.TextUtil;
 
 public class Person implements Identity {
 	
-    
+	/**
+	 * The bio.
+	 */
+	private final String bio;
+	
     /**
      * The credentials.
      */
@@ -118,6 +123,7 @@ public class Person implements Identity {
 	 * @param country The country.
 	 */
 	public Person(Sex sex, Range ageRange, Country country) {
+		this.bio = BioHandler.getRandomBio();
 		this.creds = new StringKeyValuePair(TextUtil.randomString(8, 12, TextSeed.LOWERCASE, TextSeed.DIGITS), TextUtil.generatePassword());
 		this.firstName = TextUtil.randomString(3, 10, TextSeed.LOWERCASE, TextSeed.DIGITS);
 		this.lastName = TextUtil.randomString(3, 10, TextSeed.LOWERCASE, TextSeed.DIGITS);
@@ -285,6 +291,15 @@ public class Person implements Identity {
 			return false;
 		}
 		return true;
+	}
+	
+	/**
+	 * Retrieves the bio.
+	 * 
+	 * @return The bio.
+	 */
+	public String getBio() {
+		return bio;
 	}
 	
 	/**
