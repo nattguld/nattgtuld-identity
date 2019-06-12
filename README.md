@@ -1,5 +1,5 @@
 # nattgtuld-identity
-An advanced library to generate and manage virtual identities.
+An easy to use library to generate virtual identities.
 
 ## Dependencies
 This library uses the following dependencies:  
