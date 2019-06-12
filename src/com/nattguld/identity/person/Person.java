@@ -4,7 +4,6 @@ import java.util.Objects;
 
 import com.google.gson.JsonObject;
 import com.mifmif.common.regex.Generex;
-import com.nattguld.http.ConnectionPolicy;
 import com.nattguld.http.HttpClient;
 import com.nattguld.http.requests.impl.GetRequest;
 import com.nattguld.http.response.RequestResponse;
@@ -145,7 +144,7 @@ public class Person implements Identity {
 
 	@Override
 	public void generate() {
-		try (HttpClient c = new HttpClient(ConnectionPolicy.SSL)) {
+		try (HttpClient c = new HttpClient()) {
 			RequestResponse rr = c.dispatchRequest(new GetRequest("https://randomuser.me/api/?gender=" 
 					+ (sex == Sex.FEMALE ? "female" : "male") + "&password=upper,lower,number,8-16"));
 			
