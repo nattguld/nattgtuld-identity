@@ -3,6 +3,7 @@ package com.nattguld.identity.person;
 import java.util.Objects;
 
 import com.google.gson.JsonObject;
+import com.mifmif.common.regex.Generex;
 import com.nattguld.http.ConnectionPolicy;
 import com.nattguld.http.HttpClient;
 import com.nattguld.http.requests.impl.GetRequest;
@@ -124,9 +125,9 @@ public class Person implements Identity {
 	 */
 	public Person(Sex sex, Range ageRange, Country country) {
 		this.bio = BioHandler.getRandomBio();
-		this.creds = new StringKeyValuePair(TextUtil.randomString(8, 12, TextSeed.LOWERCASE, TextSeed.DIGITS), TextUtil.generatePassword());
-		this.firstName = TextUtil.randomString(3, 10, TextSeed.LOWERCASE, TextSeed.DIGITS);
-		this.lastName = TextUtil.randomString(3, 10, TextSeed.LOWERCASE, TextSeed.DIGITS);
+		this.creds = new StringKeyValuePair(new Generex("([A-Z]{1})([aeiou]{1,2})([a-z]{1,2})([aeiou]{1,2})([a-z]{1,2})([aeiou]{1,2})([a-z]{1,2})").random(), TextUtil.generatePassword());
+		this.firstName = new Generex("([A-Z]{1})([aeiou]{1,2})([a-z]{1,2})([aeiou]{1,2})([a-z]{1,2})").random();
+		this.lastName = new Generex("([A-Z]{1})([aeiou]{1,2})([a-z]{1,2})([aeiou]{1,2})([a-z]{1,2})").random();
 		this.street = "waystreet " + Maths.random(new Range(1, 500));
 		this.city = "Local";
 		this.zipcode = "NA";
@@ -190,13 +191,13 @@ public class Person implements Identity {
     		String emailName = emailAddress.split("@")[0] + Maths.random(999);
     		emailAddress = emailName += "@gmail.com";
     		
-    		String builtUsername = buildUsername(username);
+    		String builtUsername = Maths.random(2) == 1 ? creds.getKey() : buildUsername(username);
     		
     		if (Objects.nonNull(builtUsername)) {
     			creds = new StringKeyValuePair(builtUsername, password);
     		} else {
     			if (isValid(username)) {
-    				new StringKeyValuePair(username, password);
+    				creds = new StringKeyValuePair(username, password);
     			}
     		}
 		}

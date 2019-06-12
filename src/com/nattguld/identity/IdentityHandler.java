@@ -1,5 +1,6 @@
 package com.nattguld.identity;
 
+import com.mifmif.common.regex.Generex;
 import com.nattguld.identity.person.Person;
 import com.nattguld.util.locale.Country;
 import com.nattguld.util.maths.Maths;
@@ -12,6 +13,12 @@ import com.nattguld.util.maths.Range;
  */
 
 public class IdentityHandler {
+	
+	public static void main(String[] args) {
+		for (int i = 0; i < 10; i++) {
+			System.out.println(new Generex("([A-Z]{1})([aeiou]{1,2})([a-z]{1,2})([aeiou]{1,2})([a-z]{1,2})([aeiou]{1,2})([a-z]{1,2})").random());
+		}
+	}
 	
 	/**
 	 * The available western countries.
