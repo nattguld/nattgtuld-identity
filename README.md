@@ -3,8 +3,8 @@ An advanced library to generate and manage virtual identities.
 
 ## Dependencies
 This library uses the following dependencies:  
-**nattguld-http:** Used for HTTP communication. https://github.com/randqm/nattguld-http  
-**nattguld-util:** Contains various helper methods. https://github.com/randqm/nattguld-util  
+**nattguld-http:** Used for HTTP communication. https://github.com/nattguld/nattguld-http  
+**nattguld-util:** Contains various helper methods. https://github.com/nattguld/nattguld-util  
 **generex:** Used for generating output using regex.  https://github.com/mifmif/Generex  
 
 ## About
