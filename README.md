@@ -11,4 +11,12 @@ This library uses the following dependencies:
 This library is used to generate all kinds of virtual person identities. Be aware that this library depends heavily on 3rd party services to gather the identity details and could stop working at any time if a 3rd party service gets disbanned and no alternative is available.
 
 ## Examples
-//TODO
+```java
+Person person = IdentityHandler.generatePerson(Sex.EXAMPLE, new Range(minAge, maxAge), Country.EXAMPLE);
+person.getBio();
+person.getCreds().getUsername();
+person.getFirstName();
+person.getBirthDay();
+person.getStreet();
+...
+```
