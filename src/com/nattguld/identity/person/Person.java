@@ -1,5 +1,6 @@
 package com.nattguld.identity.person;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 import com.google.gson.JsonObject;
@@ -11,11 +12,14 @@ import com.nattguld.identity.Identity;
 import com.nattguld.identity.Sex;
 import com.nattguld.identity.person.profile.BioHandler;
 import com.nattguld.util.chrono.DateTime;
+import com.nattguld.util.chrono.DateTimeUtil;
+import com.nattguld.util.chrono.format.DateFormat;
 import com.nattguld.util.generics.kvps.impl.StringKeyValuePair;
 import com.nattguld.util.locale.Country;
 import com.nattguld.util.locale.Language;
 import com.nattguld.util.maths.Maths;
 import com.nattguld.util.maths.Range;
+import com.nattguld.util.text.Delimiter;
 import com.nattguld.util.text.TextSeed;
 import com.nattguld.util.text.TextUtil;
 
@@ -480,6 +484,16 @@ public class Person implements Identity {
 	 */
 	public void setBirthYear(int birthYear) {
 		this.birthYear = birthYear;
+	}
+	
+	/**
+	 * Retrieves the age.
+	 * 
+	 * @return The age.
+	 */
+	public int getAge() {
+		LocalDateTime ldt = DateTimeUtil.parseDate("" + birthDay + "-" + birthMonth + "-" + birthYear, DateFormat.DD_MM_YYYY.getFormat(Delimiter.MINUS));
+		return new DateTime(ldt).getPeriodTillToday().getYears();
 	}
 
 	/**
