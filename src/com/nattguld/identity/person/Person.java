@@ -1,6 +1,5 @@
 package com.nattguld.identity.person;
 
-import java.time.LocalDateTime;
 import java.util.Objects;
 
 import com.google.gson.JsonObject;
@@ -12,14 +11,11 @@ import com.nattguld.identity.Identity;
 import com.nattguld.identity.Sex;
 import com.nattguld.identity.person.profile.BioHandler;
 import com.nattguld.util.chrono.DateTime;
-import com.nattguld.util.chrono.DateTimeUtil;
-import com.nattguld.util.chrono.format.DateFormat;
 import com.nattguld.util.generics.kvps.impl.StringKeyValuePair;
 import com.nattguld.util.locale.Country;
 import com.nattguld.util.locale.Language;
 import com.nattguld.util.maths.Maths;
 import com.nattguld.util.maths.Range;
-import com.nattguld.util.text.Delimiter;
 import com.nattguld.util.text.TextSeed;
 import com.nattguld.util.text.TextUtil;
 
@@ -72,19 +68,9 @@ public class Person implements Identity {
     private String state;
     
     /**
-     * the birth day.
+     * The date of birth.
      */
-    private int birthDay;
-    
-    /**
-     * the birth month.
-     */
-    private int birthMonth;
-    
-    /**
-     * The birth year.
-     */
-    private int birthYear;
+    private DateTime dob;
     
     /**
      * The avatar.
@@ -139,11 +125,7 @@ public class Person implements Identity {
 		this.sex = sex;
 		this.country = country;
 		this.language = country.getRandomLanguage();
-		
-		DateTime dt = new DateTime(System.currentTimeMillis() - (Maths.random(ageRange) * 365 * 24 * 60 * 60 * 1000) - (Maths.random(365 * 24 * 60 * 60) * 1000));
-		this.birthDay = dt.getDay();
-		this.birthMonth = dt.getMonth();
-		this.birthYear = dt.getYear();
+		this.dob = new DateTime(new DateTime().getLocalDateTime().minusYears(18).minusMonths(1 + Maths.random(11)).minusDays(1 + Maths.random(27)));
 	}
 
 	@Override
@@ -214,7 +196,7 @@ public class Person implements Identity {
 	private String buildUsername(String originalUsername) {
 		String username = firstName + lastName + Maths.random(999);
 		String rndStr = TextUtil.randomString(2, 5, TextSeed.LOWERCASE);
-		String birthYear2d = Integer.toString(birthYear).substring(2, 4);
+		String birthYear2d = Integer.toString(getBirthYear()).substring(2, 4);
 		//Generate/format username
 		int roll = Maths.random(8);
 		
@@ -431,6 +413,15 @@ public class Person implements Identity {
 	public void setState(String state) {
 		this.state = state;
 	}
+	
+	/**
+	 * Modifies the birth day.
+	 * 
+	 * @param birthDay The new birth day.
+	 */
+	public void setDob(DateTime dob) {
+		this.dob = dob;
+	}
 
 	/**
 	 * Retrieves the birth day.
@@ -438,16 +429,7 @@ public class Person implements Identity {
 	 * @return The birth day.
 	 */
 	public int getBirthDay() {
-		return birthDay;
-	}
-
-	/**
-	 * Modifies the birth day.
-	 * 
-	 * @param birthDay The new birth day.
-	 */
-	public void setBirthDay(int birthDay) {
-		this.birthDay = birthDay;
+		return dob.getDay();
 	}
 
 	/**
@@ -456,16 +438,7 @@ public class Person implements Identity {
 	 * @return The birth month.
 	 */
 	public int getBirthMonth() {
-		return birthMonth;
-	}
-
-	/**
-	 * Modifies the birth month.
-	 * 
-	 * @param birthMonth The new birth month.
-	 */
-	public void setBirthMonth(int birthMonth) {
-		this.birthMonth = birthMonth;
+		return dob.getMonth();
 	}
 
 	/**
@@ -474,16 +447,7 @@ public class Person implements Identity {
 	 * @return The birth year.
 	 */
 	public int getBirthYear() {
-		return birthYear;
-	}
-
-	/**
-	 * Modifies the birth year.
-	 * 
-	 * @param birthYear The new birth year.
-	 */
-	public void setBirthYear(int birthYear) {
-		this.birthYear = birthYear;
+		return dob.getYear();
 	}
 	
 	/**
@@ -492,8 +456,7 @@ public class Person implements Identity {
 	 * @return The age.
 	 */
 	public int getAge() {
-		LocalDateTime ldt = DateTimeUtil.parseDate("" + birthDay + "-" + birthMonth + "-" + birthYear, DateFormat.DD_MM_YYYY.getFormat(Delimiter.MINUS));
-		return new DateTime(ldt).getPeriodTillToday().getYears();
+		return dob.getPeriodTillToday().getYears();
 	}
 
 	/**
