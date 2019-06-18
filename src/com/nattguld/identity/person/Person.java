@@ -258,7 +258,7 @@ public class Person implements Identity {
 		usernameBuilds++;
 		
 		if (!isValid(username)) {
-			return usernameBuilds < 4 ? buildUsername(originalUsername) : null;
+			return usernameBuilds < 4 ? buildUsername(originalUsername) : originalUsername;
 		}
 		return username;
 	}
