@@ -148,23 +148,24 @@ public class Person implements Identity {
 			lastName = nameObj.get("last").getAsString();
 			
 			JsonObject locObj = results.get("location").getAsJsonObject();
-			street = locObj.get("street").getAsString();
-			state = locObj.get("state").getAsString();
-			city = locObj.get("city").getAsString();
-			
+			JsonObject streetObj = locObj.get("street").getAsJsonObject();
+			street = streetObj.get("name").getAsString() + " " + streetObj.get("number").getAsInt();
+			state = locObj.has("state") && !locObj.get("state").isJsonNull() ? locObj.get("state").getAsString() : state;
+			city = locObj.has("city") && !locObj.get("city").isJsonNull() ? locObj.get("city").getAsString() : city;
+				
 			try {
 				zipcode = Integer.toString(locObj.get("postcode").getAsInt());
 			} catch (Exception ex) {
-				zipcode = locObj.get("postcode").getAsString();
+				zipcode = locObj.has("postcode") && !locObj.get("postcode").isJsonNull() ? locObj.get("postcode").getAsString() : zipcode;
 			}
 			JsonObject coordsObj = locObj.get("coordinates").getAsJsonObject();
 			String latitude = coordsObj.get("latitude").getAsString();
 			String longitude = coordsObj.get("longitude").getAsString();
-			
+				
 			JsonObject timezoneObj = locObj.get("timezone").getAsJsonObject();
 			String timezoneOffset = timezoneObj.get("offset").getAsString();
 			String timezoneName = timezoneObj.get("description").getAsString();
-
+			
 			JsonObject loginObj = results.get("login").getAsJsonObject();
 			String uuid = loginObj.get("uuid").getAsString();
 			String username = loginObj.get("username").getAsString();
