@@ -138,7 +138,7 @@ public class Person implements Identity {
 				System.err.println("Failed to request identity details (" + rr.getCode() + ")");
 				return;
 			}
-			JsonObject jsonObj = rr.getAsJsonElement().getAsJsonObject();
+			JsonObject jsonObj = rr.getJsonReader().getObject();
 			JsonObject results = jsonObj.get("results").getAsJsonArray().get(0).getAsJsonObject();
 			
 			emailAddress = results.get("email").getAsString();

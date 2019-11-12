@@ -12,7 +12,7 @@ import com.nattguld.util.text.TextUtil;
 public class BioHandler {
 	
 	/**
-	 * The available bio's.
+	 * The available bio's. 
 	 */
 	private static final String[] BIOS = new String[] {
 			"The best things come from living outside of your comfort zone",

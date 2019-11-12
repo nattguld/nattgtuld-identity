@@ -5,6 +5,7 @@ import java.util.Objects;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.nattguld.data.json.JsonReader;
 import com.nattguld.http.HttpClient;
 import com.nattguld.http.proxies.HttpProxy;
 import com.nattguld.http.proxies.ProxyManager;
@@ -16,7 +17,7 @@ import com.nattguld.http.response.RequestResponse;
  * @author randqm
  *
  */
-
+ 
 public class GeoHandler {
 	
 	/**
@@ -54,9 +55,9 @@ public class GeoHandler {
 				System.err.println("Failed to fetch location by coordinates [" + latitude + ":" + longitude + "]");
 				return "Los Angeles, USA";
 			}
-			JsonObject jsonObject = rr.getAsJsonElement().getAsJsonObject();
+			JsonReader jsonObject = rr.getJsonReader();
 			
-			String status = jsonObject.get("status").getAsString();
+			String status = jsonObject.getAsString("status");
 					
 			if (!status.equalsIgnoreCase("OK")) {
 				System.err.println("Failed to fetch location by coordinates, invalid response status");
@@ -65,7 +66,7 @@ public class GeoHandler {
 			String city = "Los Anagels";
 			String country = "USA";
 			
-			JsonArray results = jsonObject.get("results").getAsJsonArray();
+			JsonArray results = jsonObject.getAsJsonArray("results");
 	    	
 			for (JsonElement e : results) {
 				JsonObject result = e.getAsJsonObject();
@@ -163,15 +164,15 @@ public class GeoHandler {
 				System.err.println("Failed to fetch geo for query " + query);
 				return new GeoPosition(34.052235, -118.243683);
 			}
-			JsonObject jsonObject = rr.getAsJsonElement().getAsJsonObject();
+			JsonReader jsonObject = rr.getJsonReader();
 		    
-			String status = jsonObject.get("status").getAsString();
+			String status = jsonObject.getAsString("status");
 	    
 			if (!status.equalsIgnoreCase("OK")) {
 				System.err.println("Failed to fetch location by coordinates, invalid response status");
 				return new GeoPosition(34.052235, -118.243683);
 			}
-			JsonObject resultsObj = jsonObject.get("results").getAsJsonArray().get(0).getAsJsonObject();
+			JsonObject resultsObj = jsonObject.getAsJsonArray("results").get(0).getAsJsonObject();
 			JsonObject geometryObj = resultsObj.get("geometry").getAsJsonObject();
 			JsonObject locObj = geometryObj.get("location").getAsJsonObject();
 	    	
