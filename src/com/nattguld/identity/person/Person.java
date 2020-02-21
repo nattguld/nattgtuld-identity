@@ -2,21 +2,20 @@ package com.nattguld.identity.person;
 
 import java.util.Objects;
 
-import com.google.gson.JsonObject;
-import com.mifmif.common.regex.Generex;
-import com.nattguld.http.HttpClient;
-import com.nattguld.http.requests.impl.GetRequest;
-import com.nattguld.http.response.RequestResponse;
-import com.nattguld.identity.Identity;
 import com.nattguld.identity.Sex;
+import com.nattguld.identity.person.biometrics.BioMetrics;
+import com.nattguld.identity.person.biometrics.BiometricsManager;
 import com.nattguld.identity.person.profile.BioHandler;
 import com.nattguld.util.chrono.DateTime;
 import com.nattguld.util.generics.kvps.impl.StringKeyValuePair;
+import com.nattguld.util.geo.GeoManager;
+import com.nattguld.util.geo.GeoPosition;
+import com.nattguld.util.geo.location.Address;
+import com.nattguld.util.geo.models.impl.CountryCities;
 import com.nattguld.util.locale.Country;
 import com.nattguld.util.locale.Language;
 import com.nattguld.util.maths.Maths;
 import com.nattguld.util.maths.Range;
-import com.nattguld.util.text.TextSeed;
 import com.nattguld.util.text.TextUtil;
 
 /**
@@ -25,67 +24,7 @@ import com.nattguld.util.text.TextUtil;
  *
  */
 
-public class Person implements Identity {
-	
-	/**
-	 * The bio.
-	 */
-	private final String bio;
-	
-    /**
-     * The credentials.
-     */
-    private StringKeyValuePair creds;
-    
-    /**
-     * The first name.
-     */
-    private String firstName;
-    
-    /**
-     * The last name.
-     */
-    private String lastName;
-    
-    /**
-     * The street.
-     */
-    private String street;
-    
-    /**
-     * The city.
-     */
-    private String city;
-    
-    /**
-     * The zip code.
-     */
-    private String zipcode;
-    
-    /**
-     * The state or province.
-     */
-    private String state;
-    
-    /**
-     * The date of birth.
-     */
-    private DateTime dob;
-    
-    /**
-     * The avatar.
-     */
-    private String avatar;
-    
-    /**
-     * The email address.
-     */
-    private String emailAddress;
-    
-	/**
-	 * The sex.
-	 */
-	private final Sex sex;
+public class Person {
 	
 	/**
 	 * The country.
@@ -93,18 +32,73 @@ public class Person implements Identity {
 	private final Country country;
 	
 	/**
+	 * The sex.
+	 */
+	private final Sex sex;
+	
+	/**
+	 * The age range.
+	 */
+	private final Range ageRange;
+	
+	/**
+	 * The person's biometrics.
+	 */
+	private BioMetrics bioMetrics;
+	
+	/**
+	 * The given name.
+	 */
+	private String givenName;
+	
+	/**
+	 * The surname
+	 */
+	private String surname;
+	
+	/**
+	 * The geo position.
+	 */
+	private GeoPosition geoPos;
+	
+	/**
+	 * The biography.
+	 */
+	private String bio;
+	
+	/**
+	 * The online credentials.
+	 */
+	private StringKeyValuePair onlineCreds;
+	
+	/**
+	 * The email credentials.
+	 */
+	private StringKeyValuePair emailCreds;
+	
+	/**
+	 * The address.
+	 */
+	private Address address;
+	
+	/**
 	 * The spoken language.
 	 */
-	private final Language language;
+	private Language language;
 	
 	/**
-	 * The amount of username builds attempted.
+	 * The time of birth.
 	 */
-	private int usernameBuilds;
+	private long dobTime;
+	
+	/**
+	 * The date of birth.
+	 */
+	private transient DateTime dob;
 	
 	
 	/**
-	 * Creates a new person.
+	 * Creates a new person identity.
 	 * 
 	 * @param sex The sex.
 	 * 
@@ -113,389 +107,11 @@ public class Person implements Identity {
 	 * @param country The country.
 	 */
 	public Person(Sex sex, Range ageRange, Country country) {
-		this.bio = BioHandler.getRandomBio();
-		this.creds = new StringKeyValuePair(new Generex("([A-Z]{1})([aeiou]{1,2})([a-z]{1,2})([aeiou]{1,2})([a-z]{1,2})([aeiou]{1,2})([a-z]{1,2})").random(), TextUtil.generatePassword());
-		this.firstName = new Generex("([A-Z]{1})([aeiou]{1,2})([a-z]{1,2})([aeiou]{1,2})([a-z]{1,2})").random();
-		this.lastName = new Generex("([A-Z]{1})([aeiou]{1,2})([a-z]{1,2})([aeiou]{1,2})([a-z]{1,2})").random();
-		this.street = "waystreet " + Maths.random(new Range(1, 500));
-		this.city = "Local";
-		this.zipcode = "NA";
-		this.state = "NA";
-		this.emailAddress = TextUtil.generateFakeEmail();
 		this.sex = sex;
+		this.ageRange = ageRange;
 		this.country = country;
-		this.language = country.getRandomLanguage();
-		this.dob = new DateTime(new DateTime().getLocalDateTime().minusYears(18).minusMonths(1 + Maths.random(11)).minusDays(1 + Maths.random(27)));
-	}
-
-	@Override
-	public void generate() {
-		try (HttpClient c = new HttpClient()) {
-			RequestResponse rr = c.dispatchRequest(new GetRequest("https://randomuser.me/api/?gender=" 
-					+ (sex == Sex.FEMALE ? "female" : "male") + "&password=upper,lower,number,8-16"));
-			
-			if (!rr.validate()) {
-				System.err.println("Failed to request identity details (" + rr.getCode() + ")");
-				return;
-			}
-			JsonObject jsonObj = rr.getJsonReader().getObject();
-			JsonObject results = jsonObj.get("results").getAsJsonArray().get(0).getAsJsonObject();
-			
-			emailAddress = results.get("email").getAsString();
-			
-			JsonObject nameObj = results.get("name").getAsJsonObject();
-			firstName = nameObj.get("first").getAsString();
-			lastName = nameObj.get("last").getAsString();
-			
-			JsonObject locObj = results.get("location").getAsJsonObject();
-			JsonObject streetObj = locObj.get("street").getAsJsonObject();
-			street = streetObj.get("name").getAsString() + " " + streetObj.get("number").getAsInt();
-			state = locObj.has("state") && !locObj.get("state").isJsonNull() ? locObj.get("state").getAsString() : state;
-			city = locObj.has("city") && !locObj.get("city").isJsonNull() ? locObj.get("city").getAsString() : city;
-				
-			try {
-				zipcode = Integer.toString(locObj.get("postcode").getAsInt());
-			} catch (Exception ex) {
-				zipcode = locObj.has("postcode") && !locObj.get("postcode").isJsonNull() ? locObj.get("postcode").getAsString() : zipcode;
-			}
-			JsonObject coordsObj = locObj.get("coordinates").getAsJsonObject();
-			String latitude = coordsObj.get("latitude").getAsString();
-			String longitude = coordsObj.get("longitude").getAsString();
-				
-			JsonObject timezoneObj = locObj.get("timezone").getAsJsonObject();
-			String timezoneOffset = timezoneObj.get("offset").getAsString();
-			String timezoneName = timezoneObj.get("description").getAsString();
-			
-			JsonObject loginObj = results.get("login").getAsJsonObject();
-			String uuid = loginObj.get("uuid").getAsString();
-			String username = loginObj.get("username").getAsString();
-			String password = loginObj.get("password").getAsString();
-
-			JsonObject picObj = results.get("picture").getAsJsonObject();
-			avatar = picObj.get("large").getAsString();
-    		
-    		String emailName = emailAddress.split("@")[0] + Maths.random(999);
-    		emailAddress = emailName += "@gmail.com";
-    		
-    		String builtUsername = Maths.random(2) == 1 ? creds.getKey() : buildUsername(username);
-    		
-    		if (Objects.nonNull(builtUsername)) {
-    			creds = new StringKeyValuePair(builtUsername, password);
-    		} else {
-    			if (isValid(username)) {
-    				creds = new StringKeyValuePair(username, password);
-    			}
-    		}
-		}
-	}
-
-	/**
-	 * Builds a username.
-	 * 
-	 * @return The username.
-	 */
-	private String buildUsername(String originalUsername) {
-		String username = firstName + lastName + Maths.random(999);
-		String rndStr = TextUtil.randomString(2, 5, TextSeed.LOWERCASE);
-		String birthYear2d = Integer.toString(getBirthYear()).substring(2, 4);
-		//Generate/format username
-		int roll = Maths.random(8);
-		
-		switch (roll) {
-		case 0:
-			username = Maths.random(1) == 0 ? (firstName + lastName) : (lastName + firstName);
-			break;
-			
-		case 1:
-			username = Maths.random(1) == 0 ? (firstName + lastName + birthYear2d) : (lastName + firstName + birthYear2d);
-			break;
-			
-		case 2:
-			username = Maths.random(1) == 0 ? (lastName + birthYear2d) : (firstName + birthYear2d);
-			break;
-			
-		case 3:
-			username = Maths.random(1) == 0 ? (firstName + birthYear2d + lastName) : (lastName + birthYear2d + firstName);
-			break;
-			
-		case 4:
-			username = Maths.random(1) == 0 ? (firstName + rndStr) : (rndStr + firstName);
-			break;
-			
-		case 5:
-			username = Maths.random(1) == 0 ? (lastName + rndStr) : (rndStr + lastName);
-			break;
-			
-		case 6:
-			username = Maths.random(1) == 0 ? (lastName + rndStr + birthYear2d) : (rndStr + lastName + birthYear2d);
-			break;
-			
-		case 7:
-			username = Maths.random(1) == 0 ? (firstName + rndStr + birthYear2d) : (rndStr + firstName + birthYear2d);
-			break;
-			
-		case 8:
-			username = Maths.random(1) == 0 ? (firstName + lastName + rndStr) : (lastName + firstName + rndStr);
-			break;
-			
-		case 9:
-			username = Maths.random(1) == 0 ? (rndStr + firstName + lastName) : (rndStr + lastName + firstName);
-			break;
-			
-		case 10:
-		case 11:
-		case 12:
-		case 13:
-		case 14:
-			username = originalUsername;
-			break;
-		}
-		if (username.length() > 18) {
-			username = username.substring(0, 18);
-		}
-		if (username.length() < 6 && username.length() >= 3) {
-			username += (100 + Maths.random(899));
-		}
-		usernameBuilds++;
-		
-		if (!isValid(username)) {
-			return usernameBuilds < 4 ? buildUsername(originalUsername) : originalUsername;
-		}
-		return username;
 	}
 	
-	private boolean isValid(String username) {
-		if (username.length() < 3) {
-			System.err.println("Username below 3 characters, re-generating");
-			return false;
-		}
-		if (!username.matches("[A-Za-z0-9]+")) {
-			System.err.println("Username is not alphanumerc => " + username);
-			return false;
-		}
-		if (Character.isDigit(username.toCharArray()[0])) {
-			System.err.println("Username starts with digit");
-			return false;
-		}
-		return true;
-	}
-	
-	/**
-	 * Retrieves the bio.
-	 * 
-	 * @return The bio.
-	 */
-	public String getBio() {
-		return bio;
-	}
-	
-	/**
-	 * Retrieves the credentials.
-	 * 
-	 * @return The credentials.
-	 */
-	public StringKeyValuePair getCreds() {
-		return creds;
-	}
-
-	/**
-	 * Modifies the credentials.
-	 * 
-	 * @param creds The new credentials.
-	 */
-	public void setCreds(StringKeyValuePair creds) {
-		this.creds = creds;
-	}
-
-	/**
-	 * Retrieves the first name.
-	 * 
-	 * @return The first name.
-	 */
-	public String getFirstName() {
-		return firstName;
-	}
-	
-	/**
-	 * Modifies the first name.
-	 * 
-	 * @param firstName The new first name.
-	 */
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
-	}
-
-	/**
-	 * Retrieves the last name.
-	 * 
-	 * @return The last name.
-	 */
-	public String getLastName() {
-		return lastName;
-	}
-
-	/**
-	 * Modifies the last name.
-	 * 
-	 * @param lastName The new last name.
-	 */
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
-	}
-
-	/**
-	 * Retrieves the street.
-	 * 
-	 * @return The street.
-	 */
-	public String getStreet() {
-		return street;
-	}
-
-	/**
-	 * Modifies the street.
-	 * 
-	 * @param street The new street.
-	 */
-	public void setStreet(String street) {
-		this.street = street;
-	}
-
-	/**
-	 * Retrieves the city.
-	 * 
-	 * @return The city.
-	 */
-	public String getCity() {
-		return city;
-	}
-
-	/**
-	 * Modifies the city.
-	 * 
-	 * @param city The new city.
-	 */
-	public void setCity(String city) {
-		this.city = city;
-	}
-
-	/**
-	 * Retrieves the zipcode.
-	 * 
-	 * @return The zipcode.
-	 */
-	public String getZipcode() {
-		return zipcode;
-	}
-
-	/**
-	 * Modifies the zipcode.
-	 * 
-	 * @param zipcode The new zipcode.
-	 */
-	public void setZipcode(String zipcode) {
-		this.zipcode = zipcode;
-	}
-
-	/**
-	 * Retrieves the state.
-	 * 
-	 * @return The state.
-	 */
-	public String getState() {
-		return state;
-	}
-
-	/**
-	 * Modifies the state.
-	 * 
-	 * @param state The new state.
-	 */
-	public void setState(String state) {
-		this.state = state;
-	}
-	
-	/**
-	 * Modifies the birth day.
-	 * 
-	 * @param birthDay The new birth day.
-	 */
-	public void setDob(DateTime dob) {
-		this.dob = dob;
-	}
-
-	/**
-	 * Retrieves the birth day.
-	 * 
-	 * @return The birth day.
-	 */
-	public int getBirthDay() {
-		return dob.getDay();
-	}
-
-	/**
-	 * Retrieves the birth month.
-	 * 
-	 * @return The birth month.
-	 */
-	public int getBirthMonth() {
-		return dob.getMonth();
-	}
-
-	/**
-	 * Retrieves the birth year.
-	 * 
-	 * @return The birth year.
-	 */
-	public int getBirthYear() {
-		return dob.getYear();
-	}
-	
-	/**
-	 * Retrieves the age.
-	 * 
-	 * @return The age.
-	 */
-	public int getAge() {
-		return dob.getPeriodTillToday().getYears();
-	}
-
-	/**
-	 * Retrieves the avatar.
-	 * 
-	 * @return The avatar.
-	 */
-	public String getAvatar() {
-		return avatar;
-	}
-
-	/**
-	 * Modifies the avatar.
-	 * 
-	 * @param avatar The new avatar.
-	 */
-	public void setAvatar(String avatar) {
-		this.avatar = avatar;
-	}
-
-	/**
-	 * Retrieves the email address.
-	 * 
-	 * @return The email address.
-	 */
-	public String getEmailAddress() {
-		return emailAddress;
-	}
-
-	/**
-	 * Modifies the email address.
-	 * 
-	 * @param emailAddress The new email address.
-	 */
-	public void setEmailAddress(String emailAddress) {
-		this.emailAddress = emailAddress;
-	}
-
 	/**
 	 * Retrieves the sex.
 	 * 
@@ -504,7 +120,7 @@ public class Person implements Identity {
 	public Sex getSex() {
 		return sex;
 	}
-
+	
 	/**
 	 * Retrieves the country.
 	 * 
@@ -513,14 +129,324 @@ public class Person implements Identity {
 	public Country getCountry() {
 		return country;
 	}
-
+	
 	/**
-	 * Retrieves the language.
+	 * Retrieves the bio metrics.
+	 * 
+	 * @return The bio metrics.
+	 */
+	public BioMetrics getBioMetrics() {
+		if (Objects.isNull(bioMetrics)) {
+			setBioMetrics(BiometricsManager.generateRandom(country, sex));
+		}
+		return bioMetrics;
+	}
+	
+	/**
+	 * Modifies the bio metrics.
+	 * 
+	 * @param bioMetrics The bio metrics.
+	 * 
+	 * @return The person.
+	 */
+	public Person setBioMetrics(BioMetrics bioMetrics) {
+		this.bioMetrics = bioMetrics;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the given name.
+	 * 
+	 * @return The given name.
+	 */
+	public String getGivenName() {
+		if (Objects.isNull(givenName)) {
+			setGivenName(CredentialsHandler.getGivenName(sex, country));
+		}
+		return givenName;
+	}
+	
+	/**
+	 * Modifies the given name.
+	 * 
+	 * @param givenName The new given name.
+	 * 
+	 * @return The person.
+	 */
+	public Person setGivenName(String givenName) {
+		this.givenName = givenName;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the surname.
+	 * 
+	 * @return The surname.
+	 */
+	public String getSurname() {
+		if (Objects.isNull(surname)) {
+			setSurname(CredentialsHandler.getSurname(country));
+		}
+		return surname;
+	}
+	
+	/**
+	 * Modifies the name.
+	 * 
+	 * @param surname The new name.
+	 * 
+	 * @return The person.
+	 */
+	public Person setSurname(String surname) {
+		this.surname = surname;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the full name.
+	 * 
+	 * @return The full name.
+	 */
+	public String getFullName() {
+		return getGivenName() + " " + getSurname();
+	}
+	
+	/**
+	 * Retrieves the geo position.
+	 * 
+	 * @return The geo position.
+	 */
+	public GeoPosition getGeoPos() {
+		if (Objects.isNull(geoPos)) {
+			System.err.println("No geo position set for person");
+			setGeoPos(GeoManager.DEFAULT_GEO_POSITION);
+		}
+		return geoPos;
+	}
+	
+	/**
+	 * Modifies the geo position.
+	 * 
+	 * @param geoPos The new geo position.
+	 * 
+	 * @return The person.
+	 */
+	public Person setGeoPos(GeoPosition geoPos) {
+		this.geoPos = geoPos;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the biography.
+	 * 
+	 * @return The biography.
+	 */
+	public String getBio() {
+		if (Objects.isNull(bio)) {
+			setBio(BioHandler.getRandomBio());
+		}
+		return bio;
+	}
+	
+	/**
+	 * Modifies the biography.
+	 * 
+	 * @param bio The new biography.
+	 * 
+	 * @return The person.
+	 */
+	public Person setBio(String bio) {
+		this.bio = bio;
+		return this;
+	}
+	
+	/*
+	 * Retrieves the online credentials.
+	 */
+	public StringKeyValuePair getOnlineCreds() {
+		if (Objects.isNull(onlineCreds)) {
+			setOnlineCreds(CredentialsHandler.generateOnlineCredentials(getGivenName(), getSurname(), getBirthYear()));
+		}
+		return onlineCreds;
+	}
+	
+	/**
+	 * Modifies the online credentials.
+	 * 
+	 * @param onlineCreds The new online credentials.
+	 * 
+	 * @return The person.
+	 */
+	public Person setOnlineCreds(StringKeyValuePair onlineCreds) {
+		this.onlineCreds = onlineCreds;
+		return this;
+	}
+	
+	/*
+	 * Retrieves the email credentials.
+	 */
+	public StringKeyValuePair getEmailCreds() {
+		if (Objects.isNull(emailCreds)) {
+			setEmailCreds(new StringKeyValuePair(
+					TextUtil.generateFakeEmail()
+					, TextUtil.generatePassword()));
+		}
+		return emailCreds;
+	}
+	
+	/**
+	 * Modifies the email credentials.
+	 * 
+	 * @param emailCreds The new email credentials.
+	 * 
+	 * @return The person.
+	 */
+	public Person setEmailCreds(StringKeyValuePair emailCreds) {
+		this.emailCreds = emailCreds;
+		return this;
+	}
+	
+	/**
+	 * Modifies the address.
+	 * 
+	 * @param address The new address.
+	 * 
+	 * @return The person.
+	 */
+	public Person setAddress(Address address) {
+		this.address = address;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the address.
+	 * 
+	 * @return The address.
+	 */
+	public Address getAddress() {
+		if (Objects.isNull(getAddress())) {
+			CountryCities cc = GeoManager.getCountryCities(country);
+			
+			if (Objects.isNull(cc)) {
+				System.err.println("No cities found for " + country.getName());
+				return null;
+			}
+			setAddress(new Address(GeoManager.DEFAULT_CITY, "somestreet", "13"));
+			return address;
+		}
+		return address;
+	}
+	
+	/**
+	 * Retrieves the spoken language.
 	 * 
 	 * @return The language.
 	 */
 	public Language getLanguage() {
+		if (Objects.isNull(language)) {
+			setLanguage(country.getRandomLanguage());
+		}
 		return language;
+	}
+	
+	/**
+	 * Modifies the spoken language.
+	 * 
+	 * @param language The new spoken language.
+	 * 
+	 * @return The person.
+	 */
+	public Person setLanguage(Language language) {
+		this.language = language;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the birth time.
+	 * 
+	 * @return The birth time.
+	 */
+	public long getDobTime() {
+		if (dobTime == 0L) {
+			setDob(new DateTime(new DateTime().getLocalDateTime()
+					.minusYears(ageRange.getRandom())
+					.minusMonths(1 + Maths.random(11))
+					.minusDays(1 + Maths.random(27))));
+		}
+		return dobTime;
+	}
+	
+	/**
+	 * Modifies the birth time.
+	 * 
+	 * @param dobTime The new birth time.
+	 * 
+	 * @return The person.
+	 */
+	public Person setDobTime(long dobTime) {
+		this.dobTime = dobTime;
+		return this;
+	}
+	
+	/**
+	 * Retrieves the data of birth.
+	 * 
+	 * @return The date of birth.
+	 */
+	public DateTime getDob() {
+		if (Objects.isNull(dob)) {
+			getDobTime();
+		}
+		return dob;
+	}
+	
+	/**
+	 * Modifies the date of birth.
+	 * 
+	 * @param dob The new date of birth.
+	 * 
+	 * @return The person.
+	 */
+	public Person setDob(DateTime dob) {
+		this.dob = dob;
+		setDobTime(dob.getMilliSeconds());
+		return this;
+	}
+	
+	/**
+	 * Retrieves the birth day.
+	 * 
+	 * @return The birth day.
+	 */
+	public int getBirthDay() {
+		return getDob().getDay();
+	}
+
+	/**
+	 * Retrieves the birth month.
+	 * 
+	 * @return The birth month.
+	 */
+	public int getBirthMonth() {
+		return getDob().getMonth();
+	}
+
+	/**
+	 * Retrieves the birth year.
+	 * 
+	 * @return The birth year.
+	 */
+	public int getBirthYear() {
+		return getDob().getYear();
+	}
+	
+	/**
+	 * Retrieves the age.
+	 * 
+	 * @return The age.
+	 */
+	public int getAge() {
+		return getDob().getPeriodTillToday().getYears();
 	}
 
 }

@@ -123,14 +123,7 @@ public class IdentityHandler {
 	 * @return The person.
 	 */
 	public static Person generatePerson(Sex sex, Range ageRange, Country country) {
-		Person person = new Person(sex, ageRange, country);
-		
-		try {
-			person.generate();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-		return person;
+		return new Person(sex, ageRange, country);
 	}
 	
 	/**

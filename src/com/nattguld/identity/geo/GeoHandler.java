@@ -11,6 +11,9 @@ import com.nattguld.http.proxies.HttpProxy;
 import com.nattguld.http.proxies.ProxyManager;
 import com.nattguld.http.requests.impl.GetRequest;
 import com.nattguld.http.response.RequestResponse;
+import com.nattguld.util.geo.GeoCoordinates;
+import com.nattguld.util.geo.GeoManager;
+import com.nattguld.util.geo.GeoPosition;
 
 /**
  * 
@@ -34,26 +37,24 @@ public class GeoHandler {
 	 * @return The location.
 	 */
 	public static String fetchLocationByCoordinates(GeoPosition geo) {
-		return fetchLocationByCoordinates(geo.getLatitude(), geo.getLongitude());
+		return fetchLocationByCoordinates(geo.getGeoCoords());
 	}
 	
 	/**
 	 * Fetches the location for given coordinates.
 	 * 
-	 * @param latitude The latitude.
-	 * 
-	 * @param longitude The longitude.
+	 * @param geoCoordinate The geo coordinate.
 	 * 
 	 * @return The location.
 	 */
-	public static String fetchLocationByCoordinates(double latitude, double longitude) {
+	public static String fetchLocationByCoordinates(GeoCoordinates geoCoordinate) {
 		try (HttpClient c = new HttpClient()) {
 			RequestResponse rr = c.dispatchRequest(new GetRequest("https://maps.googleapis.com/maps/api/geocode/json?latlng=" 
-					+ latitude + "," + longitude + "&key=" + GEOCODING_API_KEY));
+					+ geoCoordinate.getLatitude() + "," + geoCoordinate.getLongitude() + "&key=" + GEOCODING_API_KEY));
 			
 			if (!rr.validate()) {
-				System.err.println("Failed to fetch location by coordinates [" + latitude + ":" + longitude + "]");
-				return "Los Angeles, USA";
+				System.err.println("Failed to fetch location by coordinates " + geoCoordinate.toString());
+				return "Los Angeles, United States";
 			}
 			JsonReader jsonObject = rr.getJsonReader();
 			
@@ -61,10 +62,10 @@ public class GeoHandler {
 					
 			if (!status.equalsIgnoreCase("OK")) {
 				System.err.println("Failed to fetch location by coordinates, invalid response status");
-				return "Los Angeles, USA";
+				return "Los Angeles, United States";
 			}
-			String city = "Los Anagels";
-			String country = "USA";
+			String city = "Los Angeles";
+			String country = "United States";
 			
 			JsonArray results = jsonObject.getAsJsonArray("results");
 	    	
@@ -110,8 +111,8 @@ public class GeoHandler {
 	 * 
 	 * @return The geo position.
 	 */
-	public static GeoPosition fetchIPLocation() {
-		return fetchIPLocation(ProxyManager.INVALID_PROXY);
+	public static GeoCoordinates fetchIPCoordinate() {
+		return fetchIPCoordinate(ProxyManager.LOCALHOST);
 	}
 	
 	/**
@@ -119,8 +120,8 @@ public class GeoHandler {
 	 * 
 	 * @return The geo position.
 	 */
-	public static GeoPosition fetchIPLocation(HttpClient c) {
-		return fetchIPLocation(c.getProxy());
+	public static GeoCoordinates fetchIPCoordinate(HttpClient c) {
+		return fetchIPCoordinate(c.getProxy());
 	}
 	
 	/**
@@ -128,15 +129,15 @@ public class GeoHandler {
 	 * 
 	 * @return The geo position.
 	 */
-	public static GeoPosition fetchIPLocation(HttpProxy proxy) {
-		proxy = Objects.isNull(proxy) || proxy == ProxyManager.INVALID_PROXY ? null : proxy;
+	public static GeoCoordinates fetchIPCoordinate(HttpProxy proxy) {
+		proxy = Objects.isNull(proxy) || proxy == ProxyManager.LOCALHOST ? null : proxy;
 		
 		try (HttpClient c = new HttpClient(proxy)) {
 			RequestResponse rr = c.dispatchRequest(new GetRequest("https://www.iplocation.net/"));
 			
 			if (!rr.validate()) {
-				System.err.println("Failed to fetch geo position for " + proxy + " (" + rr.getCode() + ")");
-				return new GeoPosition(34.052235, -118.243683);
+				System.err.println("Failed to fetch geo coordinate for " + proxy + " (" + rr.getCode() + ")");
+				return new GeoCoordinates(34.052235, -118.243683);
 			}
 			String latitude = rr.getAsDoc().select("#wrapper > section > div > div > div.col.col_8_of_12 > div:nth-child(12) > div > table > tbody:nth-child(4) > tr > td:nth-child(3)").text();
 			String longitude = rr.getAsDoc().select("#wrapper > section > div > div > div.col.col_8_of_12 > div:nth-child(12) > div > table > tbody:nth-child(4) > tr > td:nth-child(4)").text();
@@ -144,7 +145,7 @@ public class GeoHandler {
 			double latDbl = Double.parseDouble(latitude);
 			double longDbl = Double.parseDouble(longitude);
 					
-			return new GeoPosition(latDbl, longDbl);
+			return new GeoCoordinates(latDbl, longDbl);
 		}
 	}
 	
@@ -155,14 +156,14 @@ public class GeoHandler {
 	 * 
 	 * @return The geo position.
 	 */
-	public static GeoPosition fetchGeoByQuery(String query) {
+	public static GeoCoordinates fetchCoordinateByQuery(String query) {
 		try (HttpClient c = new HttpClient()) {
 			RequestResponse rr = c.dispatchRequest(new GetRequest("https://maps.googleapis.com/maps/api/geocode/json?address=" 
 					+ query + "&key=" + GEOCODING_API_KEY));
 			
 			if (!rr.validate()) {
 				System.err.println("Failed to fetch geo for query " + query);
-				return new GeoPosition(34.052235, -118.243683);
+				return GeoManager.DEFAULT_GEO_COORDINATES;
 			}
 			JsonReader jsonObject = rr.getJsonReader();
 		    
@@ -170,14 +171,36 @@ public class GeoHandler {
 	    
 			if (!status.equalsIgnoreCase("OK")) {
 				System.err.println("Failed to fetch location by coordinates, invalid response status");
-				return new GeoPosition(34.052235, -118.243683);
+				return GeoManager.DEFAULT_GEO_COORDINATES;
 			}
 			JsonObject resultsObj = jsonObject.getAsJsonArray("results").get(0).getAsJsonObject();
 			JsonObject geometryObj = resultsObj.get("geometry").getAsJsonObject();
 			JsonObject locObj = geometryObj.get("location").getAsJsonObject();
 	    	
-			return new GeoPosition(locObj.get("lat").getAsDouble(), locObj.get("lng").getAsDouble());
+			return new GeoCoordinates(locObj.get("lat").getAsDouble(), locObj.get("lng").getAsDouble());
 		}
+	}
+	
+	/**
+	 * Retrieves whether a given latitude is valid or not.
+	 * 
+	 * @param latitude The latitude.
+	 * 
+	 * @return The result.
+	 */
+	public static boolean isValidLatitude(double latitude) {
+		return latitude >= -90d && latitude <= 90d;
+	}
+	
+	/**
+	 * Retrieves whether a given longitude is valid or not.
+	 * 
+	 * @param longitude The longitude.
+	 * 
+	 * @return The result.
+	 */
+	public static boolean isValidLongitude(double longitude) {
+		return longitude >= -180d && longitude <= 180d;
 	}
 
 }
